@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <link rel="preconnect" href="https://assets.mixkit.co">
+    <link rel="dns-prefetch" href="https://assets.mixkit.co">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" media="print" onload="this.media='all'">
+    <title>黑金跃动留声机</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        html {
+            height: 100%;
+            background: #0a0806;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #2c241b 0%, #0a0806 80%, #000000 100%);
+            font-family: 'Playfair Display', 'Georgia', 'Songti SC', 'SimSun', serif;
+            overflow: hidden;
+            perspective: 1200px;
+        }
+
+        /* 中轴线跃动特效 */
+        .rhythm-line {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scaleX(0.7);
+            transform-origin: center center;
+            width: 600px;
+            height: 3px;
+            background: linear-gradient(to right, transparent, #d4af37 8%, #d4af37 92%, transparent);
+            box-shadow: 0 0 20px #d4af37, 0 0 40px #d4af37;
+            transition: opacity 0.1s linear;
+            will-change: transform, opacity;
+            opacity: 0.3;
+            z-index: 1; /* 放在唱片后面 */
+        }
+
+        /* 歌词显示区：放在屏幕左侧 */
+        .lyrics-container {
+            position: absolute;
+            left: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: right;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .lyric-line {
+            color: rgba(201, 185, 154, 0.4);
+            font-size: 16px;
+            font-style: italic;
+            transition: all 0.5s ease;
+        }
+
+        /* 当前高亮的歌词 */
+        .lyric-line.active {
+            color: #d4af37;
+            font-size: 20px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            transform: translateX(-10px);
+        }
+
+        .scene {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            transform-style: preserve-3d;
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 5;
+        }
+
+        .vinyl {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: repeating-radial-gradient(#111, #111 2px, #1a1a1a 3px, #111 4px);
+            border: 4px solid #8a6d3b;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 0, 0, 1), 0 0 40px rgba(138, 109, 59, 0.2);
+            transform: rotateX(55deg) rotateY(0deg) rotateZ(0deg);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .label {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d4af37 0%, #aa7c11 50%, #6b4c0a 100%);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 0 0 10px rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            animation: spin 6s linear infinite;
+            animation-play-state: paused;
+            border: 1px solid #fceabb;
+        }
+
+        .hole {
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+        }
+
+        .label::after {
+            content: "Harmonia";
+            color: #2c1e00;
+            font-size: 13px;
+            font-weight: 700;
+            font-style: italic;
+            position: absolute;
+            bottom: 18px;
+            letter-spacing: 2px;
+        }
+
+        .tonearm {
+            position: absolute;
+            top: -30px;
+            right: -45px;
+            width: 14px;
+            height: 220px;
+            background: linear-gradient(to right, #5c4013, #d4af37, #ffdf73, #8a6d3b);
+            border-radius: 4px;
+            transform-origin: top center;
+            transform: rotateZ(28deg) rotateX(-55deg);
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 10px 10px 25px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        .tonearm::after {
+            content: "";
+            position: absolute;
+            bottom: -12px;
+            left: -2px;
+            width: 18px;
+            height: 30px;
+            background: #1a1a1a;
+            border-radius: 2px;
+            border: 1px solid #d4af37;
+        }
+
+        @keyframes spin {
+            100% { transform: rotateZ(360deg); }
+        }
+
+        /* ============ 右侧唱片架 ============ */
+        .library {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 250px;
+            max-height: 64vh;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 16px 14px;
+            border: 1px solid rgba(138, 109, 59, 0.25);
+            background: linear-gradient(160deg, rgba(28, 23, 16, 0.72), rgba(12, 10, 7, 0.5));
+            z-index: 15;
+            opacity: 0.92;
+            transition: opacity 0.4s ease, border-color 0.4s ease;
+        }
+
+        .library:hover {
+            opacity: 1;
+            border-color: rgba(212, 175, 55, 0.35);
+        }
+
+        .library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+            padding-bottom: 9px;
+            border-bottom: 1px solid rgba(138, 109, 59, 0.2);
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            color: #8a6d3b;
+            text-transform: uppercase;
+        }
+
+        .library-title {
+            color: #c9b99a;
+            font-style: italic;
+            font-size: 13px;
+            letter-spacing: 0.12em;
+        }
+
+        .library-count {
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .library-hint {
+            padding: 26px 6px;
+            color: rgba(201, 185, 154, 0.35);
+            font-size: 12px;
+            font-style: italic;
+            line-height: 2;
+            text-align: center;
+        }
+
+        .library-hint strong {
+            display: block;
+            color: rgba(212, 175, 55, 0.55);
+            font-weight: 400;
+            letter-spacing: 0.08em;
+        }
+
+        .track-list {
+            list-style: none;
+            margin: 0;
+            padding: 0 2px 0 0;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(138, 109, 59, 0.45) transparent;
+        }
+
+        .track-list::-webkit-scrollbar { width: 4px; }
+        .track-list::-webkit-scrollbar-thumb { background: rgba(138, 109, 59, 0.4); border-radius: 2px; }
+
+        .track-item {
+            display: flex;
+            align-items: baseline;
+            gap: 9px;
+            padding: 7px 8px;
+            border-left: 1px solid transparent;
+            color: rgba(201, 185, 154, 0.55);
+            font-size: 12.5px;
+            cursor: pointer;
+            transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+        }
+
+        .track-item:hover {
+            background: rgba(212, 175, 55, 0.06);
+            color: #c9b99a;
+        }
+
+        .track-item.active {
+            color: #d4af37;
+            border-left-color: #d4af37;
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.13), transparent);
+        }
+
+        .track-index {
+            min-width: 18px;
+            font-size: 10px;
+            font-style: normal;
+            color: rgba(138, 109, 59, 0.75);
+            letter-spacing: 0.05em;
+        }
+
+        .track-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .track-item.active .track-name {
+            text-shadow: 0 0 12px rgba(212, 175, 55, 0.45);
+        }
+
+        .track-item.more {
+            cursor: default;
+            color: rgba(138, 109, 59, 0.6);
+            font-size: 11px;
+            font-style: italic;
+            border-left-color: transparent;
+            background: none;
+        }
+
+        /* 底部控制区 */
+        .controls {
+            position: absolute;
+            bottom: 38px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 13px;
+            z-index: 20;
+            width: 100%;
+        }
+
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 18px;
+            width: min(460px, 90vw);
+            color: #c9b99a;
+            font-size: 14px;
+            font-style: italic;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(138, 109, 59, 0.3);
+        }
+
+        #song-title {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #time-display {
+            flex-shrink: 0;
+            font-size: 12px;
+            color: #8a6d3b;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress {
+            position: relative;
+            width: min(460px, 90vw);
+            height: 2px;
+            background: rgba(138, 109, 59, 0.22);
+            cursor: pointer;
+            transition: height 0.2s ease;
+        }
+
+        .progress:hover { height: 4px; }
+
+        .progress-fill {
+            position: absolute;
+            inset: 0 auto 0 0;
+            width: 0;
+            background: linear-gradient(90deg, #8a6d3b, #d4af37, #ffdf73);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.45);
+        }
+
+        .progress::after {
+            content: "";
+            position: absolute;
+            top: -8px;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        button, .file-label {
+            padding: 9px 20px;
+            background: transparent;
+            color: #d4af37;
+            font-size: 15px;
+            font-family: 'Playfair Display', 'Songti SC', serif;
+            cursor: pointer;
+            border: 1px solid #8a6d3b;
+            transition: all 0.4s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        button:hover, .file-label:hover {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.32;
+            cursor: default;
+            background: transparent;
+            border-color: #6b5430;
+            box-shadow: none;
+        }
+
+        button:focus-visible, .file-label:focus-visible, .track-item:focus-visible {
+            outline: 1px solid #d4af37;
+            outline-offset: 3px;
+        }
+
+        #shuffle-btn.on {
+            color: #1a1206;
+            background: linear-gradient(135deg, #d4af37, #aa7c11);
+            border-color: #d4af37;
+            box-shadow: 0 0 16px rgba(212, 175, 55, 0.35);
+        }
+
+        .shortcut-hint {
+            font-size: 10.5px;
+            letter-spacing: 0.14em;
+            color: rgba(138, 109, 59, 0.6);
+            font-style: italic;
+        }
+
+        .status {
+            position: absolute;
+            left: 50%;
+            top: 40px;
+            transform: translateX(-50%);
+            max-width: 86vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #8a6d3b;
+            font-size: 14px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-align: center;
+            transition: color 0.4s ease;
+            z-index: 30;
+        }
+
+        .credit {
+            margin-top: 2px;
+            font-size: 10px;
+            letter-spacing: 0.06em;
+            color: rgba(160, 132, 82, 0.8);
+            font-style: italic;
+            text-align: center;
+        }
+
+        .credit a {
+            color: rgba(201, 185, 154, 0.7);
+            text-decoration: none;
+            border-bottom: 1px dotted rgba(138, 109, 59, 0.5);
+        }
+
+        .credit a:hover { color: #d4af37; }
+
+        .credit[hidden] { display: none; }
+
+        /* 拖入文件夹提示层 */
+        .drop-veil {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 4, 3, 0.72);
+            border: 2px dashed rgba(212, 175, 55, 0.45);
+            color: #d4af37;
+            font-size: 16px;
+            letter-spacing: 0.28em;
+            pointer-events: none;
+        }
+
+        .drop-veil.show { display: flex; }
+
+        /* 轻提示 */
+        .toast {
+            position: absolute;
+            left: 50%;
+            top: 84px;
+            transform: translate(-50%, -8px);
+            z-index: 40;
+            padding: 8px 18px;
+            border: 1px solid rgba(138, 109, 59, 0.4);
+            background: rgba(10, 8, 6, 0.85);
+            color: #d4af37;
+            font-size: 12.5px;
+            letter-spacing: 0.1em;
+            font-style: italic;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+            white-space: nowrap;
+            max-width: 86vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+
+        @media (max-width: 1180px) {
+            .lyrics-container { display: none; }
+        }
+
+        @media (max-width: 1000px) {
+            .library { display: none; }
+        }
+
+        @media (max-height: 760px) {
+            .scene { width: 280px; height: 280px; }
+            .controls { bottom: 24px; gap: 10px; }
+            .toast { bottom: 165px; }
+        }
+
+        @media (max-width: 720px) {
+            .scene { width: 240px; height: 240px; }
+            .tonearm { height: 165px; right: -30px; top: -22px; }
+            .label { width: 86px; height: 86px; }
+            .label::after { font-size: 11px; bottom: 13px; letter-spacing: 1px; }
+            .status { top: 22px; font-size: 12px; letter-spacing: 2px; }
+            .info-bar { font-size: 12px; }
+            .btn-group { gap: 7px; }
+            button, .file-label { padding: 8px 12px; font-size: 12.5px; }
+            .toast { bottom: 170px; font-size: 11.5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status" id="status-text">— Awaiting Masterpiece —</div>
+
+    <!-- 跃动横线 -->
+    <div class="rhythm-line" id="rhythm-line"></div>
+
+    <!-- 歌词区 -->
+    <div class="lyrics-container" id="lyrics-container">
+        <div class="lyric-line active">正在等待音乐的旋律...</div>
+        <div class="lyric-line">让这跃动的音符</div>
+        <div class="lyric-line">顺着这中轴线</div>
+        <div class="lyric-line">滑入你的梦境</div>
+    </div>
+
+    <!-- 右侧唱片架 -->
+    <aside class="library" id="library" aria-label="音乐库">
+        <div class="library-header">
+            <span class="library-title">唱片架</span>
+            <span class="library-count" id="library-count">0 首</span>
+        </div>
+        <div class="library-hint" id="library-hint">
+            <strong>拖入一个音乐文件夹</strong>
+            或点击「本地音乐」<br>
+            载入后随机漫游
+        </div>
+        <ol class="track-list" id="track-list" hidden></ol>
+    </aside>
+
+    <div class="scene" id="scene">
+        <div class="vinyl">
+            <div class="label" id="label">
+                <div class="hole"></div>
+            </div>
+        </div>
+        <div class="tonearm" id="tonearm"></div>
+    </div>
+
+    <div class="controls">
+        <div class="info-bar">
+            <span id="song-title">No Track Selected</span>
+            <span id="time-display">0:00 / 0:00</span>
+        </div>
+        <div class="progress" id="progress" role="slider" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="btn-group">
+            <label for="folder-input" class="file-label" id="folder-label">本地音乐</label>
+            <input type="file" id="folder-input" webkitdirectory multiple>
+            <button id="prev-btn" disabled title="上一首 (←)">上一首</button>
+            <button id="play-btn">播放 (Play)</button>
+            <button id="next-btn" disabled title="下一首 (→)">下一首</button>
+            <button id="shuffle-btn" class="on" aria-pressed="true" title="随机播放 (S)">随机 · 开</button>
+        </div>
+        <div class="shortcut-hint">空格 播放 · ← → 切歌 · S 随机</div>
+        <div class="credit" id="credit" hidden>Music from <a href="https://mixkit.co/free-stock-music/" target="_blank" rel="noopener">Mixkit</a> · <a href="https://mixkit.co/license/" target="_blank" rel="noopener">Free License</a></div>
+    </div>
+
+    <audio id="audio-player" preload="auto"></audio>
+    <audio id="preloader" preload="auto" style="display:none"></audio>
+
+    <div class="drop-veil" id="drop-veil">松开鼠标 · 载入音乐库</div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+        <!-- 在线曲库（Mixkit，免费商用） -->
+    <script>
+        const ONLINE_LIBRARY = [{"t":"Valley Sunset","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/127/127.mp3","d":134},{"t":"Vastness","a":"Andrew Ev","u":"https://assets.mixkit.co/music/184/184.mp3","d":230},{"t":"Relax Beat","a":"Arulo","u":"https://assets.mixkit.co/music/292/292.mp3","d":108},{"t":"Feedback Dreams","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/588/588.mp3","d":149},{"t":"Relaxation 05","a":"Lily J","u":"https://assets.mixkit.co/music/749/749.mp3","d":118},{"t":"Forest Mist Whispers","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/148/148.mp3","d":151},{"t":"Spirit in the Woods","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/139/139.mp3","d":113},{"t":"Forest Treasure","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/138/138.mp3","d":104},{"t":"Voxscape","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/571/571.mp3","d":300},{"t":"Meditation","a":"Arulo","u":"https://assets.mixkit.co/music/441/441.mp3","d":118},{"t":"Cyberpunk City","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/140/140.mp3","d":100},{"t":"Forest Walk","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/607/607.mp3","d":174},{"t":"Rest Now","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/584/584.mp3","d":300},{"t":"Smooth Meditation","a":"Arulo","u":"https://assets.mixkit.co/music/324/324.mp3","d":154},{"t":"Uplifting Bass","a":"Lily J","u":"https://assets.mixkit.co/music/726/726.mp3","d":96},{"t":"Opalescent","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/593/593.mp3","d":284},{"t":"Yoga Song","a":"Arulo","u":"https://assets.mixkit.co/music/444/444.mp3","d":98},{"t":"Zanarkand Forest","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/169/169.mp3","d":113},{"t":"Sonor #2","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/570/570.mp3","d":262},{"t":"Finding Myself","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/993/993.mp3","d":134},{"t":"Nature Meditation","a":"Arulo","u":"https://assets.mixkit.co/music/345/345.mp3","d":100},{"t":"Relaxation 07","a":"Lily J","u":"https://assets.mixkit.co/music/760/760.mp3","d":144},{"t":"Ambient","a":"Arulo","u":"https://assets.mixkit.co/music/251/251.mp3","d":114},{"t":"What it Takes","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/616/616.mp3","d":298},{"t":"Nature Yoga","a":"Arulo","u":"https://assets.mixkit.co/music/442/442.mp3","d":108},{"t":"Spirit in the Woods 2","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/147/147.mp3","d":104},{"t":"Pilates and Yoga","a":"Arulo","u":"https://assets.mixkit.co/music/419/419.mp3","d":96},{"t":"Charlotte","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/586/586.mp3","d":225},{"t":"Deep Meditation","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/109/109.mp3","d":147},{"t":"Nap Time","a":"Arulo","u":"https://assets.mixkit.co/music/340/340.mp3","d":103},{"t":"Romantic 04","a":"Lily J","u":"https://assets.mixkit.co/music/758/758.mp3","d":135},{"t":"Red Lights Adhafera","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/563/563.mp3","d":299},{"t":"Yoga Tune","a":"Arulo","u":"https://assets.mixkit.co/music/325/325.mp3","d":97},{"t":"Yoga Music 04","a":"Arulo","u":"https://assets.mixkit.co/music/386/386.mp3","d":111},{"t":"Relaxation Meditation","a":"Arulo","u":"https://assets.mixkit.co/music/365/365.mp3","d":104},{"t":"Fhloston Paradise Arrival","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/156/156.mp3","d":103},{"t":"Skyline","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/601/601.mp3","d":206},{"t":"Possible Dreams","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/599/599.mp3","d":159},{"t":"Little Bells","a":"Diego Nava","u":"https://assets.mixkit.co/music/506/506.mp3","d":103},{"t":"Love Serenade","a":"Andrew Ev","u":"https://assets.mixkit.co/music/182/182.mp3","d":101},{"t":"Romantic Getaway","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/88/88.mp3","d":104},{"t":"Holiday / Seasonal 3","a":"Diego Nava","u":"https://assets.mixkit.co/music/510/510.mp3","d":166},{"t":"Special Days","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/19/19.mp3","d":122},{"t":"Santa Claus is Here!","a":"Diego Nava","u":"https://assets.mixkit.co/music/533/533.mp3","d":166},{"t":"Cristales","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/577/577.mp3","d":298},{"t":"Beautiful Dream","a":"Diego Nava","u":"https://assets.mixkit.co/music/493/493.mp3","d":97},{"t":"Latin Lovers","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/39/39.mp3","d":95},{"t":"Upbeat Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/644/644.mp3","d":110},{"t":"Romantic 01","a":"Lily J","u":"https://assets.mixkit.co/music/752/752.mp3","d":99},{"t":"You Got Jazz","a":"Diego Nava","u":"https://assets.mixkit.co/music/528/528.mp3","d":100},{"t":"Smooth Like Jazz","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/24/24.mp3","d":158},{"t":"Romantic Vacation","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/89/89.mp3","d":112},{"t":"Winter Wind","a":"Diego Nava","u":"https://assets.mixkit.co/music/502/502.mp3","d":92},{"t":"I'm Hungry!","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/808/808.mp3","d":110},{"t":"Lounging By Moonlight","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/40/40.mp3","d":94},{"t":"Chill Bro","a":"Diego Nava","u":"https://assets.mixkit.co/music/494/494.mp3","d":100},{"t":"Jazz 1","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/639/639.mp3","d":134},{"t":"Swing is the Answer","a":"Diego Nava","u":"https://assets.mixkit.co/music/526/526.mp3","d":109},{"t":"Soul Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/652/652.mp3","d":135},{"t":"Lonely in the Bar","a":"Diego Nava","u":"https://assets.mixkit.co/music/518/518.mp3","d":92},{"t":"Lo-Fi 03","a":"Lily J","u":"https://assets.mixkit.co/music/765/765.mp3","d":113},{"t":"Nostalgic Night","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1112/1112.mp3","d":125},{"t":"Where Are My Boots?","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/820/820.mp3","d":162},{"t":"Lost in a Dream","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1033/1033.mp3","d":112},{"t":"Pop 03","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/700/700.mp3","d":171},{"t":"Yo Chucky","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/861/861.mp3","d":97},{"t":"Danger","a":"Diego Nava","u":"https://assets.mixkit.co/music/495/495.mp3","d":90},{"t":"Papa","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/879/879.mp3","d":97},{"t":"Hip Hop 02","a":"Lily J","u":"https://assets.mixkit.co/music/738/738.mp3","d":115},{"t":"C.B.P.D","a":"Arulo","u":"https://assets.mixkit.co/music/400/400.mp3","d":99},{"t":"Sweet September","a":"Arulo","u":"https://assets.mixkit.co/music/282/282.mp3","d":99},{"t":"Complicated","a":"Arulo","u":"https://assets.mixkit.co/music/281/281.mp3","d":109},{"t":"Praise the Lord","a":"Arulo","u":"https://assets.mixkit.co/music/262/262.mp3","d":99},{"t":"Need for speed","a":"Arulo","u":"https://assets.mixkit.co/music/369/369.mp3","d":98},{"t":"Trap Hamza","a":"Arulo","u":"https://assets.mixkit.co/music/267/267.mp3","d":105},{"t":"Basketball Training","a":"Arulo","u":"https://assets.mixkit.co/music/349/349.mp3","d":112},{"t":"G Eazy NBA type","a":"Arulo","u":"https://assets.mixkit.co/music/403/403.mp3","d":104},{"t":"Waka Floka Type","a":"Arulo","u":"https://assets.mixkit.co/music/364/364.mp3","d":103},{"t":"Thunder","a":"Arulo","u":"https://assets.mixkit.co/music/318/318.mp3","d":101},{"t":"Trap","a":"Arulo","u":"https://assets.mixkit.co/music/305/305.mp3","d":107},{"t":"Like a Loop Machine","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/876/876.mp3","d":129},{"t":"Young Trizzy 02","a":"Arulo","u":"https://assets.mixkit.co/music/431/431.mp3","d":97},{"t":"Trapanomics","a":"Arulo","u":"https://assets.mixkit.co/music/283/283.mp3","d":96},{"t":"Head Bang","a":"Arulo","u":"https://assets.mixkit.co/music/357/357.mp3","d":97},{"t":"Arab Nights","a":"Arulo","u":"https://assets.mixkit.co/music/460/460.mp3","d":105},{"t":"Baileys","a":"Diego Nava","u":"https://assets.mixkit.co/music/476/476.mp3","d":97},{"t":"Try Me","a":"Arulo","u":"https://assets.mixkit.co/music/235/235.mp3","d":110},{"t":"Molly Hip Hop Beat","a":"Arulo","u":"https://assets.mixkit.co/music/260/260.mp3","d":99},{"t":"Acid Party","a":"Arulo","u":"https://assets.mixkit.co/music/420/420.mp3","d":101},{"t":"Hip Hop 03","a":"Lily J","u":"https://assets.mixkit.co/music/739/739.mp3","d":112},{"t":"Billy the Kid","a":"Arulo","u":"https://assets.mixkit.co/music/399/399.mp3","d":105},{"t":"21","a":"Arulo","u":"https://assets.mixkit.co/music/445/445.mp3","d":100},{"t":"Never Going Broke","a":"Arulo","u":"https://assets.mixkit.co/music/301/301.mp3","d":133},{"t":"Sparta","a":"Arulo","u":"https://assets.mixkit.co/music/370/370.mp3","d":104},{"t":"Pop 07","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/699/699.mp3","d":131},{"t":"Lord Knows","a":"Arulo","u":"https://assets.mixkit.co/music/293/293.mp3","d":103},{"t":"Lean and Pills","a":"Arulo","u":"https://assets.mixkit.co/music/408/408.mp3","d":102},{"t":"RnB","a":"Arulo","u":"https://assets.mixkit.co/music/224/224.mp3","d":115},{"t":"Torey","a":"Arulo","u":"https://assets.mixkit.co/music/304/304.mp3","d":121},{"t":"Party","a":"Arulo","u":"https://assets.mixkit.co/music/303/303.mp3","d":97},{"t":"Wedding Song 03","a":"Arulo","u":"https://assets.mixkit.co/music/389/389.mp3","d":96},{"t":"Playboi","a":"Arulo","u":"https://assets.mixkit.co/music/452/452.mp3","d":97},{"t":"Eyes in the Puddle","a":"Arulo","u":"https://assets.mixkit.co/music/257/257.mp3","d":119},{"t":"Remember Me","a":"Arulo","u":"https://assets.mixkit.co/music/375/375.mp3","d":102},{"t":"Sports Highlights","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/51/51.mp3","d":96},{"t":"Carry On","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1091/1091.mp3","d":95},{"t":"K.O.","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1068/1068.mp3","d":101},{"t":"The Long Road","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/52/52.mp3","d":97},{"t":"The Duel","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/817/817.mp3","d":103},{"t":"Me and You","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/851/851.mp3","d":157},{"t":"Punked Up Fun","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/47/47.mp3","d":100},{"t":"Proud of You","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1117/1117.mp3","d":104},{"t":"Sports Rock","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/78/78.mp3","d":102},{"t":"Rought and Ready","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/50/50.mp3","d":110},{"t":"Oh My Joe","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1151/1151.mp3","d":99},{"t":"Hooligans","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/998/998.mp3","d":101},{"t":"Caught on Tape","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1133/1133.mp3","d":98},{"t":"Kroks","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/591/591.mp3","d":228},{"t":"Rock the Game","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/49/49.mp3","d":102},{"t":"The Root","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1157/1157.mp3","d":103},{"t":"I'm All Heart","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1085/1085.mp3","d":109},{"t":"Siren Song","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1155/1155.mp3","d":110},{"t":"Life Goes On","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1105/1105.mp3","d":106},{"t":"Dare Me","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1135/1135.mp3","d":92},{"t":"Pick it Up","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1116/1116.mp3","d":125},{"t":"Cold Coffee","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1092/1092.mp3","d":131},{"t":"Ride the Waves","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/48/48.mp3","d":114},{"t":"Mada","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/608/608.mp3","d":148},{"t":"Lets Paint the Town Red!","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1004/1004.mp3","d":122},{"t":"Whoop Yo' A$$ Boy","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1082/1082.mp3","d":123},{"t":"A Man with a Broken Heart","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/788/788.mp3","d":202},{"t":"Classique","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/63/63.mp3","d":134},{"t":"Motivation Gets in the Way","a":"Diego Nava","u":"https://assets.mixkit.co/music/519/519.mp3","d":183},{"t":"On Parole","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1188/1188.mp3","d":94},{"t":"Don't Fall Again","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1137/1137.mp3","d":139},{"t":"How Does it Feel","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/954/954.mp3","d":158},{"t":"Goup the Wall","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1064/1064.mp3","d":98},{"t":"Rock Chic","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/60/60.mp3","d":99},{"t":"Surf's Up Dude","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/83/83.mp3","d":90},{"t":"Nice Try","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1111/1111.mp3","d":92},{"t":"One More Dance","a":"Arulo","u":"https://assets.mixkit.co/music/288/288.mp3","d":100},{"t":"Feeling Happy","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/5/5.mp3","d":148},{"t":"Happy Home","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/801/801.mp3","d":110},{"t":"Island Beat","a":"Arulo","u":"https://assets.mixkit.co/music/250/250.mp3","d":102},{"t":"Night Sky Hip Hop","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/970/970.mp3","d":257},{"t":"I Can Hear Your Heartbeat","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1000/1000.mp3","d":110},{"t":"Oh Lord","a":"Arulo","u":"https://assets.mixkit.co/music/200/200.mp3","d":143},{"t":"Midnight Funk","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1147/1147.mp3","d":107},{"t":"Life is a Dream","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/837/837.mp3","d":99},{"t":"Happy Times","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/158/158.mp3","d":100},{"t":"Disco Ain't Old School","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/935/935.mp3","d":98},{"t":"Follow Me Home","a":"Arulo","u":"https://assets.mixkit.co/music/350/350.mp3","d":74},{"t":"At the Playhouse","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/821/821.mp3","d":91},{"t":"Bopper from Memphis","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1131/1131.mp3","d":112},{"t":"A Special Feeling","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1087/1087.mp3","d":100},{"t":"I Believe in Us","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1030/1030.mp3","d":168},{"t":"Take this Higher","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1012/1012.mp3","d":99},{"t":"Old Letter","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/854/854.mp3","d":165},{"t":"Fashion","a":"Arulo","u":"https://assets.mixkit.co/music/228/228.mp3","d":144},{"t":"Chicken Out","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1166/1166.mp3","d":120},{"t":"Traveling Along","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/94/94.mp3","d":100},{"t":"Aerobic Fashion","a":"Arulo","u":"https://assets.mixkit.co/music/327/327.mp3","d":98},{"t":"Turn This Up a Little Louder!","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1048/1048.mp3","d":113},{"t":"I Love You Mommy","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/831/831.mp3","d":92},{"t":"This Our Year! (Happy New Year!)","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/927/927.mp3","d":142},{"t":"See You Next Christmas","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/916/916.mp3","d":103},{"t":"You and Me","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1124/1124.mp3","d":101},{"t":"Shame","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/553/553.mp3","d":128},{"t":"Swings and Slides","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/14/14.mp3","d":134},{"t":"It's A Cool Thing","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1164/1164.mp3","d":109},{"t":"Follow My Voice","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1138/1138.mp3","d":119},{"t":"Clumsy Daddy","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/827/827.mp3","d":93},{"t":"Brother's Love","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/825/825.mp3","d":155},{"t":"J.B. R&B Music","a":"Arulo","u":"https://assets.mixkit.co/music/227/227.mp3","d":100},{"t":"Digital Clouds","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/175/175.mp3","d":101},{"t":"Pop Track 03","a":"Lily J","u":"https://assets.mixkit.co/music/729/729.mp3","d":97},{"t":"Trap Electro Vibes","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/126/126.mp3","d":116},{"t":"Infinity","a":"Arulo","u":"https://assets.mixkit.co/music/440/440.mp3","d":103},{"t":"Sci-Fi Score","a":"Arulo","u":"https://assets.mixkit.co/music/464/464.mp3","d":97},{"t":"Stylz","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/102/102.mp3","d":100},{"t":"Infected Mushroom Vibes","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/136/136.mp3","d":90},{"t":"Focus on Yourself","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/568/568.mp3","d":286},{"t":"Coffee or Tea","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1168/1168.mp3","d":125},{"t":"Kodama Night Town","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/114/114.mp3","d":185},{"t":"Serene Moments","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/27/27.mp3","d":119},{"t":"Jungle Voices","a":"Diego Nava","u":"https://assets.mixkit.co/music/517/517.mp3","d":98},{"t":"R&B vibes 1","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/685/685.mp3","d":181},{"t":"New Bass 02","a":"Lily J","u":"https://assets.mixkit.co/music/721/721.mp3","d":96},{"t":"Atoms in Peace","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/107/107.mp3","d":227},{"t":"Kraft Twerk","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/115/115.mp3","d":130},{"t":"Sci-Fi Game","a":"Arulo","u":"https://assets.mixkit.co/music/395/395.mp3","d":100},{"t":"Cinematic Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/653/653.mp3","d":144},{"t":"Odd Beats 01","a":"Lily J","u":"https://assets.mixkit.co/music/722/722.mp3","d":95},{"t":"Relaxation 2","a":"Arulo","u":"https://assets.mixkit.co/music/253/253.mp3","d":113},{"t":"Brainiac","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/167/167.mp3","d":106},{"t":"Sonor 03","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/561/561.mp3","d":299},{"t":"Drum and Bass Vibes","a":"Lily J","u":"https://assets.mixkit.co/music/719/719.mp3","d":96},{"t":"Hot Love","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/99/99.mp3","d":99},{"t":"Silk","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/143/143.mp3","d":98},{"t":"Hip Latin Jazz Groove","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/112/112.mp3","d":109},{"t":"Sweatin' It","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/103/103.mp3","d":102},{"t":"Silent Descent","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/614/614.mp3","d":160},{"t":"Fright Night","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/871/871.mp3","d":101},{"t":"Piano Horror","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/671/671.mp3","d":113},{"t":"Epical Drums 01","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/676/676.mp3","d":106},{"t":"Echoes","a":"Andrew Ev","u":"https://assets.mixkit.co/music/188/188.mp3","d":226},{"t":"Epical Drums 05","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/680/680.mp3","d":102},{"t":"Games Worldbeat","a":"Bernardo R.","u":"https://assets.mixkit.co/music/466/466.mp3","d":107},{"t":"Tapis","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/615/615.mp3","d":163},{"t":"Romantic 05","a":"Lily J","u":"https://assets.mixkit.co/music/759/759.mp3","d":112},{"t":"Epical Drums 02","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/677/677.mp3","d":123},{"t":"Summer Fun","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/13/13.mp3","d":139},{"t":"A New Life","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/543/543.mp3","d":99},{"t":"I Won't surrender","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/846/846.mp3","d":114},{"t":"PlaceIt World 01","a":"Lily J","u":"https://assets.mixkit.co/music/724/724.mp3","d":96},{"t":"Sicilian Coffee","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/613/613.mp3","d":153},{"t":"Dark Shadows","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/64/64.mp3","d":106},{"t":"Epical Drums 04","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/679/679.mp3","d":121},{"t":"Epical Drums 03","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/678/678.mp3","d":183},{"t":"Drawing the Sky","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/606/606.mp3","d":207},{"t":"River Flow","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/594/594.mp3","d":270},{"t":"Forever in My Heart","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/797/797.mp3","d":149},{"t":"The Journey","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/79/79.mp3","d":108},{"t":"Autofahren","a":"Mauro Urbina","u":"https://assets.mixkit.co/music/770/770.mp3","d":284},{"t":"Wedding Music","a":"Arulo","u":"https://assets.mixkit.co/music/272/272.mp3","d":129},{"t":"Tinsel and Mistletoe","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/93/93.mp3","d":95},{"t":"Moon Walk","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/609/609.mp3","d":205},{"t":"Vertigo","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/597/597.mp3","d":191},{"t":"Vampires in the City","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/892/892.mp3","d":100},{"t":"We Will Get It","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/598/598.mp3","d":269},{"t":"The Farewell","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/546/546.mp3","d":104},{"t":"Sleepy Cat","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/135/135.mp3","d":119},{"t":"Pop 05","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/695/695.mp3","d":154},{"t":"Majestic","a":"Diego Nava","u":"https://assets.mixkit.co/music/475/475.mp3","d":109},{"t":"See Line Funk","a":"Alejandro Magaña","u":"https://assets.mixkit.co/music/105/105.mp3","d":133},{"t":"Thinking About You","a":"Arulo","u":"https://assets.mixkit.co/music/234/234.mp3","d":118},{"t":"Fun Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/647/647.mp3","d":141},{"t":"New York","a":"Arulo","u":"https://assets.mixkit.co/music/427/427.mp3","d":96},{"t":"Groovy Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/646/646.mp3","d":136},{"t":"Pop One","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/664/664.mp3","d":130},{"t":"Dreamy Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/645/645.mp3","d":136},{"t":"Feeling Good","a":"Diego Nava","u":"https://assets.mixkit.co/music/513/513.mp3","d":100},{"t":"Slow Walk","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1009/1009.mp3","d":103},{"t":"Majid Jordan","a":"Arulo","u":"https://assets.mixkit.co/music/336/336.mp3","d":96},{"t":"Hip Hop Two","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/666/666.mp3","d":140},{"t":"Too Sexy for Halloween","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/887/887.mp3","d":113},{"t":"Close the Lights","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/826/826.mp3","d":116},{"t":"Romantic 02","a":"Lily J","u":"https://assets.mixkit.co/music/753/753.mp3","d":104},{"t":"Murda NBA","a":"Arulo","u":"https://assets.mixkit.co/music/372/372.mp3","d":100},{"t":"Just Walk","a":"Diego Nava","u":"https://assets.mixkit.co/music/497/497.mp3","d":96},{"t":"Pop 06","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/698/698.mp3","d":153},{"t":"Funky Fit","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/74/74.mp3","d":100},{"t":"Aruba","a":"Arulo","u":"https://assets.mixkit.co/music/421/421.mp3","d":102},{"t":"Hip Hop 01","a":"Lily J","u":"https://assets.mixkit.co/music/737/737.mp3","d":149},{"t":"Lost in Dreams","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/26/26.mp3","d":124},{"t":"Funk Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/643/643.mp3","d":136},{"t":"Space Bird","a":"Diego Nava","u":"https://assets.mixkit.co/music/500/500.mp3","d":109},{"t":"Red Moon","a":"Diego Nava","u":"https://assets.mixkit.co/music/499/499.mp3","d":104},{"t":"Gimme that Groove!","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/872/872.mp3","d":88},{"t":"Dirty Thinkin'","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/989/989.mp3","d":89},{"t":"Funkee Monkeee","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1140/1140.mp3","d":98},{"t":"Funky Triplets","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1141/1141.mp3","d":109},{"t":"Sounds Good","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1077/1077.mp3","d":96},{"t":"Light it Up Boy","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/849/849.mp3","d":94},{"t":"Dry Gin","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/868/868.mp3","d":109},{"t":"Adone","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/635/635.mp3","d":182},{"t":"Year 2001","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/860/860.mp3","d":111},{"t":"Love","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/787/787.mp3","d":71},{"t":"Funky Martian","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1029/1029.mp3","d":100},{"t":"Bob","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/824/824.mp3","d":122},{"t":"Stripped Bare","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/72/72.mp3","d":102},{"t":"Keep the Funk ON","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1003/1003.mp3","d":151},{"t":"Cherry on Top","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/983/983.mp3","d":106},{"t":"Marcus","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/850/850.mp3","d":125},{"t":"Dude","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1190/1190.mp3","d":109},{"t":"Too Hot","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/858/858.mp3","d":108},{"t":"Blue Funk","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1054/1054.mp3","d":143},{"t":"Let's All Dance This Christmas","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/911/911.mp3","d":113},{"t":"Workout 02","a":"Lily J","u":"https://assets.mixkit.co/music/757/757.mp3","d":105},{"t":"Night Patrol","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/853/853.mp3","d":89},{"t":"Simon Says","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1042/1042.mp3","d":147},{"t":"Pop 04","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/696/696.mp3","d":190},{"t":"My Mind Goes Wah Wah","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1109/1109.mp3","d":114},{"t":"Five","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1060/1060.mp3","d":106},{"t":"Peenzee O'Traak","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/610/610.mp3","d":181},{"t":"One Night Gamble","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1152/1152.mp3","d":101},{"t":"Are U Ready For This?","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1127/1127.mp3","d":97},{"t":"Evolution","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1027/1027.mp3","d":115},{"t":"Feel Alive","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/953/953.mp3","d":106},{"t":"True Love","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/43/43.mp3","d":115},{"t":"Rebecca","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1039/1039.mp3","d":96},{"t":"Cotton Candy R&B Beat","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1094/1094.mp3","d":117},{"t":"Ahead of Time","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/842/842.mp3","d":125},{"t":"Sun and His Daughter","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/580/580.mp3","d":168},{"t":"Indian Meditations","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/21/21.mp3","d":168},{"t":"Love is Eternal","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/37/37.mp3","d":104},{"t":"Holiday Fun","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/87/87.mp3","d":95},{"t":"Let's Play Africa","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1084/1084.mp3","d":114},{"t":"Just Chill","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/16/16.mp3","d":125},{"t":"Nield Grohm Hanging 3","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/540/540.mp3","d":255},{"t":"Gold Virginia","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/578/578.mp3","d":267},{"t":"Classical Jazz","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/689/689.mp3","d":161},{"t":"Cuban Flavor","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/673/673.mp3","d":119},{"t":"Nature's Fabric","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/67/67.mp3","d":101},{"t":"A Decade in Beijing","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/863/863.mp3","d":117},{"t":"Nield Grohm Hanging 4","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/541/541.mp3","d":231},{"t":"Ocean of Love","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1113/1113.mp3","d":98},{"t":"Lazy Camel","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1104/1104.mp3","d":138},{"t":"Wo Ai Ni","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/979/979.mp3","d":147},{"t":"Nield Grohm Hanging 2","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/539/539.mp3","d":231},{"t":"Happy Chinese New Year!","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1065/1065.mp3","d":153},{"t":"Dancing Fit","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/45/45.mp3","d":105},{"t":"Between Two Evils","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1020/1020.mp3","d":147},{"t":"Percussions 03","a":"Lily J","u":"https://assets.mixkit.co/music/735/735.mp3","d":108},{"t":"Percussions 04","a":"Lily J","u":"https://assets.mixkit.co/music/736/736.mp3","d":106},{"t":"Ixta","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/178/178.mp3","d":109},{"t":"Minimalist Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/651/651.mp3","d":164},{"t":"Slow Trail","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/71/71.mp3","d":103},{"t":"Cancion Oeste","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/574/574.mp3","d":197},{"t":"Pan Pipes Magic","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/17/17.mp3","d":129},{"t":"Seduction","a":"Arulo","u":"https://assets.mixkit.co/music/233/233.mp3","d":104},{"t":"Lullaby","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/1/1.mp3","d":157},{"t":"Thanks for another day","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1044/1044.mp3","d":126},{"t":"Romantic 03","a":"Lily J","u":"https://assets.mixkit.co/music/754/754.mp3","d":102},{"t":"Relaxation 06","a":"Lily J","u":"https://assets.mixkit.co/music/748/748.mp3","d":122},{"t":"Percussions 01","a":"Lily J","u":"https://assets.mixkit.co/music/733/733.mp3","d":102},{"t":"Brazil Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/641/641.mp3","d":141},{"t":"Fun at the Farm","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1063/1063.mp3","d":106},{"t":"Relaxing Country","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/23/23.mp3","d":110},{"t":"I Will Marry That Cowgirl","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/805/805.mp3","d":94},{"t":"Fifth of February","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1028/1028.mp3","d":188},{"t":"Baby Yohan","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1052/1052.mp3","d":95},{"t":"Birthday Gift","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/791/791.mp3","d":91},{"t":"Our Journey","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1073/1073.mp3","d":163},{"t":"Goin' Back to Alabama","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/830/830.mp3","d":88},{"t":"Violin Uplift","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/675/675.mp3","d":124},{"t":"Old Old Love","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1038/1038.mp3","d":107},{"t":"Country Holidays","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/86/86.mp3","d":114},{"t":"Hope and Kindness","a":"Diego Nava","u":"https://assets.mixkit.co/music/534/534.mp3","d":120},{"t":"Let's Win the Race","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/848/848.mp3","d":134},{"t":"Here Comes The Train","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/802/802.mp3","d":100},{"t":"Cancion de Crystal","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/583/583.mp3","d":298},{"t":"Holiday / Seasonal 5","a":"Diego Nava","u":"https://assets.mixkit.co/music/512/512.mp3","d":120},{"t":"Holiday Tears","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/975/975.mp3","d":98},{"t":"Wedding 03","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/665/665.mp3","d":142},{"t":"Far From Home","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/795/795.mp3","d":97},{"t":"Bigger than Texas","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1053/1053.mp3","d":96},{"t":"Lazy Afternoon","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/812/812.mp3","d":109},{"t":"Oh","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/779/779.mp3","d":126},{"t":"Pop 12","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/705/705.mp3","d":187},{"t":"I Still Believe","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1177/1177.mp3","d":100},{"t":"I'm Sorry Babe","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/809/809.mp3","d":119},{"t":"I'm a Rebel","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1178/1178.mp3","d":100},{"t":"Through Ups and Down","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1046/1046.mp3","d":273},{"t":"A Father's Magic","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1017/1017.mp3","d":116},{"t":"Purple Roses","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1189/1189.mp3","d":132},{"t":"Easy Monday","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1025/1025.mp3","d":104},{"t":"If I Could Then I Would","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1099/1099.mp3","d":107},{"t":"I've Been Careful","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/560/560.mp3","d":284},{"t":"Buddy Cool Guy","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1163/1163.mp3","d":112},{"t":"I'm All Yours","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/807/807.mp3","d":119},{"t":"Hey Billy","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/803/803.mp3","d":101},{"t":"Soothe Me","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/29/29.mp3","d":138},{"t":"Space Goddess","a":"Arulo","u":"https://assets.mixkit.co/music/428/428.mp3","d":102},{"t":"Grandpa's Twist","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/800/800.mp3","d":114},{"t":"Delta What!","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/948/948.mp3","d":135},{"t":"Stevie","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1078/1078.mp3","d":184},{"t":"Easy Times","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/20/20.mp3","d":202},{"t":"A War With Myself","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1088/1088.mp3","d":114},{"t":"The Preachers Fight","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/818/818.mp3","d":104},{"t":"Last Day","a":"Diego Nava","u":"https://assets.mixkit.co/music/498/498.mp3","d":115},{"t":"Better Times are Coming","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/173/173.mp3","d":100},{"t":"Sun in Your Eyes","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/131/131.mp3","d":106},{"t":"Lonerism","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/159/159.mp3","d":105},{"t":"Games Music","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/706/706.mp3","d":118},{"t":"Wedding 02","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/660/660.mp3","d":136},{"t":"Close Up","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1167/1167.mp3","d":95},{"t":"Raising Me Higher","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/34/34.mp3","d":98},{"t":"Piano Reflections","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/22/22.mp3","d":199},{"t":"Curiosity","a":"Diego Nava","u":"https://assets.mixkit.co/music/480/480.mp3","d":100},{"t":"Motivating Mornings","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/33/33.mp3","d":96},{"t":"It's Love","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/834/834.mp3","d":97},{"t":"Your Breath","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/634/634.mp3","d":236},{"t":"My Little Prince","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/815/815.mp3","d":132},{"t":"Stay With Me","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/838/838.mp3","d":127},{"t":"Ramp It Up","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/69/69.mp3","d":102},{"t":"Running Out of Time","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/77/77.mp3","d":97},{"t":"I'm Fine","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1002/1002.mp3","d":104},{"t":"Lo-Fi 04","a":"Lily J","u":"https://assets.mixkit.co/music/766/766.mp3","d":164},{"t":"Relaxation 04","a":"Lily J","u":"https://assets.mixkit.co/music/750/750.mp3","d":130},{"t":"Pop Track 06","a":"Lily J","u":"https://assets.mixkit.co/music/732/732.mp3","d":114},{"t":"Break Away","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/85/85.mp3","d":97},{"t":"The Boss","a":"Diego Nava","u":"https://assets.mixkit.co/music/479/479.mp3","d":92},{"t":"A Blue Day","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/150/150.mp3","d":200},{"t":"Lo-Fi 02","a":"Lily J","u":"https://assets.mixkit.co/music/764/764.mp3","d":98},{"t":"The King","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/857/857.mp3","d":124},{"t":"Crying Sea","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1023/1023.mp3","d":140},{"t":"Pop Two","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/697/697.mp3","d":140},{"t":"Crazy Daze","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1134/1134.mp3","d":125},{"t":"Look At The Bright Side","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/964/964.mp3","d":87},{"t":"Lust","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/966/966.mp3","d":129},{"t":"You're Somewhere in Between","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/928/928.mp3","d":104},{"t":"Shoot the Devil Tonight","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1119/1119.mp3","d":112},{"t":"Dirty Blues","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/949/949.mp3","d":122},{"t":"Stay","a":"Mauro Urbina","u":"https://assets.mixkit.co/music/776/776.mp3","d":300},{"t":"Lies and More Lies","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1185/1185.mp3","d":120},{"t":"Driving Ambition","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/32/32.mp3","d":102},{"t":"Classical vibes 2","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/682/682.mp3","d":113},{"t":"Discover","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/587/587.mp3","d":144},{"t":"Secret Garden","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/595/595.mp3","d":153},{"t":"Wedding 01","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/657/657.mp3","d":146},{"t":"Classical vibes 4","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/684/684.mp3","d":137},{"t":"Romantic","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/659/659.mp3","d":159},{"t":"Fallen (Asper)","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/565/565.mp3","d":295},{"t":"Dreaming Big","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/31/31.mp3","d":110},{"t":"Classical 3","a":"Jonny S.","u":"https://assets.mixkit.co/music/710/710.mp3","d":108},{"t":"Classical vibes 5","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/688/688.mp3","d":123},{"t":"Classical 6","a":"Jonny S.","u":"https://assets.mixkit.co/music/713/713.mp3","d":110},{"t":"Classical 7","a":"Jonny S.","u":"https://assets.mixkit.co/music/714/714.mp3","d":156},{"t":"Staring at the Night Sky","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/168/168.mp3","d":142},{"t":"Classical 2","a":"Jonny S.","u":"https://assets.mixkit.co/music/709/709.mp3","d":124},{"t":"Classical vibes 3","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/683/683.mp3","d":125},{"t":"Miss You","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/592/592.mp3","d":238},{"t":"Forever Love","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/38/38.mp3","d":111},{"t":"Life's a Movie","a":"Arulo","u":"https://assets.mixkit.co/music/322/322.mp3","d":121},{"t":"Fragments Of Bangkok","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/625/625.mp3","d":300},{"t":"Epic Games","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/76/76.mp3","d":99},{"t":"Classical 4","a":"Jonny S.","u":"https://assets.mixkit.co/music/711/711.mp3","d":189},{"t":"Ode to Loneliness","a":"Diego Nava","u":"https://assets.mixkit.co/music/520/520.mp3","d":119},{"t":"We'll Be Okay","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1081/1081.mp3","d":104},{"t":"Love in the Air","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/41/41.mp3","d":120},{"t":"Wedding Harp","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/672/672.mp3","d":141},{"t":"Serene View","a":"Arulo","u":"https://assets.mixkit.co/music/443/443.mp3","d":114},{"t":"Smooth Jazz","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/640/640.mp3","d":142},{"t":"Day Dreamin' with U","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/988/988.mp3","d":118},{"t":"Lo-Fi 01","a":"Lily J","u":"https://assets.mixkit.co/music/763/763.mp3","d":102},{"t":"House One","a":"Francisco Alvear","u":"https://assets.mixkit.co/music/662/662.mp3","d":116},{"t":"The Hamptons","a":"Arulo","u":"https://assets.mixkit.co/music/331/331.mp3","d":98},{"t":"Pop 08","a":"Grigoriy Nuzhny","u":"https://assets.mixkit.co/music/701/701.mp3","d":144},{"t":"Green Chair RnB","a":"Diego Nava","u":"https://assets.mixkit.co/music/485/485.mp3","d":93},{"t":"Tides Turning","a":"Arulo","u":"https://assets.mixkit.co/music/439/439.mp3","d":120},{"t":"Roses","a":"Andrew Ev","u":"https://assets.mixkit.co/music/183/183.mp3","d":267},{"t":"Other World","a":"Lily J","u":"https://assets.mixkit.co/music/723/723.mp3","d":96},{"t":"Dim The Lights","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/97/97.mp3","d":125},{"t":"These Nights","a":"Ahjay Stelino","u":"https://assets.mixkit.co/music/104/104.mp3","d":101},{"t":"Love Slave","a":"Arulo","u":"https://assets.mixkit.co/music/222/222.mp3","d":116},{"t":"La La Land","a":"Alejandro Magaña (A. M.)","u":"https://assets.mixkit.co/music/116/116.mp3","d":101},{"t":"Nield Grohm Hanging 1","a":"Eugenio Mininni","u":"https://assets.mixkit.co/music/538/538.mp3","d":222},{"t":"Oscar el Asesino","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1071/1071.mp3","d":140},{"t":"Never Say Die","a":"Michael Ramir C.","u":"https://assets.mixkit.co/music/1070/1070.mp3","d":106}];
+    </script>
+
+    <script>
+    (() => {
+        'use strict';
+
+        const AUDIO_RE = /\.(mp3|flac|wav|wave|ogg|oga|m4a|aac|opus|wma|aif|aiff|ape|webm)$/i;
+        const MAX_RENDERED = 2000; // 唱片架最多渲染这么多行，随机仍覆盖整个曲库
+
+        const $ = (id) => document.getElementById(id);
+        const els = {
+            scene: $('scene'), label: $('label'), tonearm: $('tonearm'),
+            playBtn: $('play-btn'), prevBtn: $('prev-btn'), nextBtn: $('next-btn'),
+            shuffleBtn: $('shuffle-btn'),
+            status: $('status-text'), folderInput: $('folder-input'),
+            audio: $('audio-player'), preloader: $('preloader'), songTitle: $('song-title'),
+            timeDisplay: $('time-display'),
+            rhythm: $('rhythm-line'),
+            progress: $('progress'), progressFill: $('progress-fill'),
+            trackList: $('track-list'), libraryCount: $('library-count'),
+            libraryHint: $('library-hint'), toast: $('toast'),
+            dropVeil: $('drop-veil'),
+            credit: $('credit')
+        };
+
+        const state = {
+            tracks: [],       // { title, remote, filename/file, path, seconds, bpm, broken }
+            deck: [],         // 洗好的播放顺序（下标）
+            deckPos: -1,
+            current: -1,
+            history: [],
+            shuffle: true,
+            objectUrl: null,
+            libraryName: '',
+            errorStreak: 0,
+            online: false,
+            hasPlayed: false
+        };
+
+        let rafId = null;
+        let toastTimer = 0;
+
+        /* ---------------- 小工具 ---------------- */
+
+        function fmt(seconds) {
+            if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${String(s).padStart(2, '0')}`;
+        }
+
+        function toast(message) {
+            els.toast.textContent = message;
+            els.toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2600);
+        }
+
+        function setStatus(text, color) {
+            els.status.textContent = text;
+            els.status.style.color = color || '#8a6d3b';
+        }
+
+        function shuffleInPlace(list) {
+            for (let i = list.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [list[i], list[j]] = [list[j], list[i]];
+            }
+            return list;
+        }
+
+        function filePath(file) {
+            if (file.webkitRelativePath) return file.webkitRelativePath;
+            if (file._relativePath) return String(file._relativePath).replace(/^\//, '');
+            return file.name;
+        }
+
+        /* ---------------- 唱片架渲染 ---------------- */
+
+        function renderLibrary() {
+            const total = state.tracks.length;
+            els.libraryCount.textContent = total ? `${total} 首` : '0 首';
+            els.libraryHint.hidden = total > 0;
+            els.trackList.hidden = total === 0;
+            els.trackList.textContent = '';
+
+            if (!total) return;
+
+            const fragment = document.createDocumentFragment();
+            const shown = Math.min(total, MAX_RENDERED);
+
+            for (let i = 0; i < shown; i++) {
+                const track = state.tracks[i];
+                const li = document.createElement('li');
+                li.className = 'track-item';
+                li.dataset.index = String(i);
+                li.title = track.remote
+                    ? `${fmt(track.seconds)} · ${track.artist || 'Mixkit'}`
+                    : track.path;
+
+                const num = document.createElement('span');
+                num.className = 'track-index';
+                num.textContent = String(i + 1).padStart(2, '0');
+
+                const name = document.createElement('span');
+                name.className = 'track-name';
+                name.textContent = track.title;
+
+                li.append(num, name);
+                li.addEventListener('click', () => {
+                    if (i === state.current) {
+                        els.audio.currentTime = 0;
+                        startPlayback();
+                    } else {
+                        playIndex(i, true);
+                    }
+                });
+                fragment.appendChild(li);
+            }
+
+            els.trackList.appendChild(fragment);
+
+            if (total > shown) {
+                const more = document.createElement('li');
+                more.className = 'track-item more';
+                more.textContent = `… 仅显示前 ${shown} 首，随机仍覆盖全部`;
+                els.trackList.appendChild(more);
+            }
+        }
+
+        function markActive(index) {
+            for (const li of els.trackList.children) {
+                if (li.dataset.index !== undefined) {
+                    li.classList.toggle('active', li.dataset.index === String(index));
+                }
+            }
+            const active = els.trackList.querySelector('.track-item.active');
+            if (active) active.scrollIntoView({ block: 'center' });
+        }
+
+        /* ---------------- 播放顺序 ---------------- */
+
+        function rebuildDeck() {
+            state.deck = shuffleInPlace(state.tracks.map((_, i) => i));
+            state.deckPos = -1;
+            // 避免洗完一轮后立刻重播刚结束的那一首
+            if (state.deck.length > 1 && state.deck[0] === state.current) {
+                [state.deck[0], state.deck[1]] = [state.deck[1], state.deck[0]];
+            }
+        }
+
+        function step(dir) {
+            const total = state.tracks.length;
+            if (!total) { promptLibrary(); return; }
+
+            if (dir > 0) {
+                if (state.shuffle) {
+                    if (state.deck.length !== total) rebuildDeck();
+                    if (state.deckPos + 1 >= state.deck.length) {
+                        rebuildDeck();
+                        toast('一轮播完，重新洗牌');
+                    }
+                    state.deckPos += 1;
+                    playIndex(state.deck[state.deckPos], true);
+                } else {
+                    let next = state.current;
+                    for (let k = 0; k < total; k++) {
+                        next = (next + 1) % total;
+                        if (!state.tracks[next].broken) break;
+                    }
+                    playIndex(next, true);
+                }
+                return;
+            }
+
+            // 上一首
+            const prev = state.history.pop();
+            if (prev !== undefined && prev !== state.current) {
+                if (state.shuffle) {
+                    const pos = state.deck.indexOf(prev);
+                    if (pos !== -1) state.deckPos = pos;
+                }
+                playIndex(prev, true, false);
+            } else {
+                els.audio.currentTime = 0;
+                if (els.audio.paused) startPlayback();
+            }
+        }
+
+        function playIndex(index, autoplay = true, record = true) {
+            if (index < 0 || index >= state.tracks.length) return;
+            stopPreload();
+            const track = state.tracks[index];
+            const previousUrl = state.objectUrl;
+            state.objectUrl = null;
+
+            if (record && state.current !== -1) {
+                state.history.push(state.current);
+                if (state.history.length > 200) state.history.shift();
+            }
+
+            state.current = index;
+            stopRhythm();
+
+            let src;
+            if (track.remote) {
+                src = track.url;
+            } else {
+                state.objectUrl = URL.createObjectURL(track.file);
+                src = state.objectUrl;
+            }
+            els.audio.src = src;
+            if (previousUrl) URL.revokeObjectURL(previousUrl);
+
+            els.songTitle.textContent = track.title;
+            els.timeDisplay.textContent = `0:00 / ${fmt(track.seconds)}`;
+            els.progressFill.style.width = '0%';
+            els.progress.setAttribute('aria-valuenow', '0');
+            document.title = `${track.title} · 黑金跃动留声机`;
+
+            markActive(index);
+            updateMediaSession(track);
+
+            if (autoplay) {
+                startPlayback();
+            } else {
+                setStatus('— Ready —');
+            }
+        }
+
+        function nextTrackIndex() {
+            if (!state.tracks.length) return -1;
+            if (state.shuffle) {
+                if (state.deck.length !== state.tracks.length) return -1;
+                return state.deck[state.deckPos + 1] !== undefined ? state.deck[state.deckPos + 1] : -1;
+            }
+            return (state.current + 1) % state.tracks.length;
+        }
+
+        function stopPreload() {
+            els.preloader.pause();
+            els.preloader.removeAttribute('src');
+            els.preloader.dataset.url = '';
+            try { els.preloader.load(); } catch (err) { /* ignore */ }
+        }
+
+        // 等当前这首基本缓冲完，再预取下一首，避免和正在播放的音频抢带宽
+        function preloadNextTrack() {
+            if (!state.online) return;
+            const index = nextTrackIndex();
+            if (index < 0) return;
+            const track = state.tracks[index];
+            if (!track || !track.remote || !track.url) return;
+            if (els.preloader.dataset.url === track.url) return;
+            els.preloader.dataset.url = track.url;
+            els.preloader.src = track.url;
+            try { els.preloader.load(); } catch (err) { /* ignore */ }
+        }
+
+        function maybePreloadNext() {
+            if (!state.online || els.audio.paused) return;
+            const duration = els.audio.duration;
+            if (!Number.isFinite(duration) || duration <= 0) return;
+            const buffered = els.audio.buffered;
+            if (!buffered.length) return;
+            if (buffered.end(buffered.length - 1) < duration - 2) return;
+            preloadNextTrack();
+        }
+
+        function startPlayback() {
+            if (!state.tracks.length) { promptLibrary(); return; }
+            if (state.current === -1) { step(1); return; }
+
+            const promise = els.audio.play();
+            if (!promise) return;
+            promise.catch((err) => {
+                if (err.name === 'NotAllowedError') {
+                    setStatus('— 轻触任意处开始 —', '#d4af37');
+                } else if (err.name === 'AbortError') {
+                    // 切歌时被新的加载打断，忽略
+                } else {
+                    setStatus('— 无法播放 —');
+                    toast('播放失败：' + (err.message || '未知错误'));
+                }
+            });
+        }
+
+        function promptLibrary() {
+            toast('先载入一个本地音乐文件夹');
+            els.folderInput.click();
+        }
+
+        /* ---------------- 跃动效果（按 BPM 打拍子） ---------------- */
+
+        function startRhythm() {
+            if (rafId) return;
+            const track = state.tracks[state.current];
+            const bpm = track && track.bpm ? track.bpm : 100;
+            const period = 60 / Math.min(200, Math.max(40, bpm));
+            const startedAt = performance.now();
+
+            const tick = () => {
+                rafId = requestAnimationFrame(tick);
+                const phase = (((performance.now() - startedAt) / 1000) % period) / period;
+                const env = Math.exp(-phase * 6);
+                const scale = 0.7 + env * 0.3;
+                els.rhythm.style.transform = `translate(-50%, -50%) scaleX(${scale.toFixed(3)})`;
+                els.rhythm.style.opacity = (0.3 + env * 0.55).toFixed(2);
+            };
+            tick();
+        }
+
+        function stopRhythm() {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = null;
+            els.rhythm.style.transform = 'translate(-50%, -50%) scaleX(0.7)';
+            els.rhythm.style.opacity = '0.3';
+        }
+
+        /* ---------------- 界面状态 ---------------- */
+
+        function setPlayingUI(playing) {
+            els.label.style.animationPlayState = playing ? 'running' : 'paused';
+            els.tonearm.style.transform = playing
+                ? 'rotateZ(42deg) rotateX(-55deg)'
+                : 'rotateZ(28deg) rotateX(-55deg)';
+            els.playBtn.textContent = playing ? '暂停 (Pause)' : '播放 (Play)';
+            els.progress.setAttribute('aria-valuenow', String(Math.round(progressRatio() * 100)));
+
+            if (playing) {
+                state.hasPlayed = true;
+                setStatus('— Now Playing —', '#d4af37');
+                startRhythm();
+            } else {
+                setStatus('— Paused —');
+                stopRhythm();
+            }
+        }
+
+        function progressRatio() {
+            const duration = els.audio.duration;
+            if (!Number.isFinite(duration) || duration <= 0) return 0;
+            return Math.min(1, Math.max(0, els.audio.currentTime / duration));
+        }
+
+        function updateTime() {
+            const track = state.tracks[state.current];
+            const mediaDuration = els.audio.duration;
+            const duration = Number.isFinite(mediaDuration) && mediaDuration > 0
+                ? mediaDuration
+                : (track && track.seconds ? track.seconds : 0);
+
+            els.timeDisplay.textContent = `${fmt(els.audio.currentTime)} / ${fmt(duration)}`;
+            const ratio = progressRatio();
+            els.progressFill.style.width = `${ratio * 100}%`;
+            els.progress.setAttribute('aria-valuenow', String(Math.round(ratio * 100)));
+        }
+
+        function updateMediaSession(track) {
+            if (!('mediaSession' in navigator)) return;
+            try {
+                if ('MediaMetadata' in window) {
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: track.title,
+                        artist: track.remote ? (track.artist || 'Mixkit') : (state.libraryName || 'Harmonia'),
+                        album: 'Harmonia'
+                    });
+                }
+                navigator.mediaSession.setActionHandler('nexttrack', () => step(1));
+                navigator.mediaSession.setActionHandler('previoustrack', () => step(-1));
+                navigator.mediaSession.setActionHandler('play', () => startPlayback());
+                navigator.mediaSession.setActionHandler('pause', () => els.audio.pause());
+            } catch (err) {
+                // 某些浏览器不支持全部 action，忽略即可
+            }
+        }
+
+        function resetPlayback() {
+            state.current = -1;
+            state.history = [];
+            state.deck = [];
+            state.deckPos = -1;
+            state.errorStreak = 0;
+
+            els.audio.pause();
+            els.audio.removeAttribute('src');
+            try { els.audio.load(); } catch (err) { /* ignore */ }
+
+            if (state.objectUrl) {
+                URL.revokeObjectURL(state.objectUrl);
+                state.objectUrl = null;
+            }
+
+            stopRhythm();
+            stopPreload();
+            els.songTitle.textContent = 'No Track Selected';
+            els.timeDisplay.textContent = '0:00 / 0:00';
+            els.progressFill.style.width = '0%';
+            els.playBtn.textContent = '播放 (Play)';
+            document.title = '黑金跃动留声机';
+        }
+
+        /* ---------------- 在线曲库 ---------------- */
+
+        function initOnlineLibrary() {
+            if (!ONLINE_LIBRARY.length) return;
+
+            state.online = true;
+            state.libraryName = '在线曲库';
+            state.tracks = ONLINE_LIBRARY.map((item) => ({
+                title: item.t,
+                artist: item.a,
+                url: item.u,
+                seconds: item.d,
+                bpm: 0,
+                remote: true,
+                path: item.u,
+                broken: false
+            }));
+
+            renderLibrary();
+            rebuildDeck();
+            els.prevBtn.disabled = false;
+            els.nextBtn.disabled = false;
+            els.credit.hidden = false;
+
+            setStatus(`— 在线曲库 · ${state.tracks.length} 首 —`);
+            step(1);
+        }
+
+        /* ---------------- 载入本地音乐库 ---------------- */
+
+        function loadLibrary(files, name) {
+            const audioFiles = Array.from(files).filter((file) => AUDIO_RE.test(file.name));
+            if (!audioFiles.length) {
+                setStatus('— No Audio Found —');
+                toast('这个文件夹里没有可播放的音频');
+                return;
+            }
+
+            resetPlayback();
+            state.online = false;
+            state.hasPlayed = false;
+            els.credit.hidden = true;
+
+            state.libraryName = name || '音乐库';
+            state.tracks = audioFiles
+                .map((file) => ({
+                    file,
+                    path: filePath(file),
+                    title: file.name.replace(/\.[^.]+$/, ''),
+                    remote: false,
+                    bpm: 100,
+                    seconds: 0,
+                    broken: false
+                }))
+                .sort((a, b) => a.path.localeCompare(b.path, 'zh-Hans-CN', { numeric: true, sensitivity: 'base' }));
+
+            state.errorStreak = 0;
+            renderLibrary();
+            rebuildDeck();
+            els.prevBtn.disabled = false;
+            els.nextBtn.disabled = false;
+
+            setStatus(`— ${state.libraryName} · ${state.tracks.length} 首 —`);
+            toast(`已载入 ${state.tracks.length} 首，随机开始`);
+            step(1);
+        }
+
+        /* ---------------- 事件绑定 ---------------- */
+
+        els.folderInput.addEventListener('change', (event) => {
+            const files = Array.from(event.target.files || []);
+            event.target.value = '';
+            if (!files.length) return;
+            const first = files[0].webkitRelativePath || '';
+            const folderName = first.split('/')[0] || '音乐库';
+            loadLibrary(files, folderName);
+        });
+
+        els.playBtn.addEventListener('click', () => {
+            if (!state.tracks.length) { promptLibrary(); return; }
+            if (els.audio.paused) {
+                if (state.current === -1) step(1);
+                else startPlayback();
+            } else {
+                els.audio.pause();
+            }
+        });
+
+        els.prevBtn.addEventListener('click', () => step(-1));
+        els.nextBtn.addEventListener('click', () => step(1));
+
+        function toggleShuffle() {
+            state.shuffle = !state.shuffle;
+            els.shuffleBtn.classList.toggle('on', state.shuffle);
+            els.shuffleBtn.setAttribute('aria-pressed', String(state.shuffle));
+            els.shuffleBtn.textContent = state.shuffle ? '随机 · 开' : '随机 · 关';
+            if (state.shuffle) {
+                if (state.tracks.length) rebuildDeck();
+                toast('随机播放已开启');
+            } else {
+                toast('顺序播放已开启');
+            }
+        }
+
+        els.shuffleBtn.addEventListener('click', toggleShuffle);
+
+        els.audio.addEventListener('loadedmetadata', updateTime);
+        els.audio.addEventListener('durationchange', updateTime);
+        els.audio.addEventListener('timeupdate', updateTime);
+        els.audio.addEventListener('progress', maybePreloadNext);
+        els.audio.addEventListener('canplaythrough', maybePreloadNext);
+
+        els.audio.addEventListener('play', () => setPlayingUI(true));
+        els.audio.addEventListener('playing', () => {
+            state.errorStreak = 0;
+            setPlayingUI(true);
+            maybePreloadNext();
+        });
+        els.audio.addEventListener('waiting', () => {
+            if (state.current >= 0 && !els.audio.paused) setStatus('— 缓冲中 —');
+        });
+        els.audio.addEventListener('pause', () => {
+            if (state.current >= 0) setPlayingUI(false);
+        });
+        els.audio.addEventListener('ended', () => {
+            if (state.current >= 0) step(1);
+        });
+        els.audio.addEventListener('error', () => {
+            if (state.current < 0 || !els.audio.getAttribute('src')) return;
+            const track = state.tracks[state.current];
+            if (track) track.broken = true;
+            state.errorStreak += 1;
+
+            if (state.errorStreak >= 3) {
+                if (state.online) {
+                    setStatus('— 网络不可用 · 可载入本地音乐 —');
+                    toast('在线曲库加载失败，请检查网络，或选择本地音乐');
+                    } else {
+                    setStatus('— 没有可播放的音频 —');
+                    toast('这些文件都无法播放，可能是浏览器不支持的格式');
+                }
+                return;
+            }
+
+            toast(`无法播放：${track ? track.title : '未知曲目'}`);
+            setTimeout(() => {
+                if (state.current >= 0) step(1);
+            }, 600);
+        });
+
+        /* 首次交互：浏览器不允许自动出声，点一下任何地方就开始 */
+        document.addEventListener('pointerdown', (event) => {
+            if (state.hasPlayed || !state.tracks.length) return;
+            const target = event.target;
+            if (target && target.closest && target.closest('button, label, input, a, .track-item, .progress')) return;
+            startPlayback();
+        }, true);
+
+        /* 进度条拖动 / 点击跳转 */
+        function seekFromEvent(event) {
+            const rect = els.progress.getBoundingClientRect();
+            if (!rect.width) return;
+            const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+            const duration = els.audio.duration;
+            if (Number.isFinite(duration) && duration > 0) {
+                els.audio.currentTime = ratio * duration;
+                updateTime();
+            }
+        }
+
+        els.progress.addEventListener('pointerdown', (event) => {
+            if (!state.tracks.length) return;
+            els.progress.setPointerCapture(event.pointerId);
+            seekFromEvent(event);
+            const onMove = (moveEvent) => seekFromEvent(moveEvent);
+            const onUp = () => {
+                els.progress.removeEventListener('pointermove', onMove);
+                els.progress.removeEventListener('pointerup', onUp);
+            };
+            els.progress.addEventListener('pointermove', onMove);
+            els.progress.addEventListener('pointerup', onUp);
+        });
+
+        /* 键盘快捷键 */
+        document.addEventListener('keydown', (event) => {
+            const target = event.target;
+            if (target && target.closest && target.closest('input, button, label, textarea, select')) return;
+
+            if (event.code === 'Space') {
+                event.preventDefault();
+                els.playBtn.click();
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                els.nextBtn.click();
+            } else if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                els.prevBtn.click();
+            } else if (event.key === 's' || event.key === 'S') {
+                event.preventDefault();
+                toggleShuffle();
+            }
+        });
+
+        /* 3D 视差交互 */
+        let parallaxFrame = 0;
+        let pointerX = 0;
+        let pointerY = 0;
+
+        document.addEventListener('mousemove', (event) => {
+            pointerX = event.clientX;
+            pointerY = event.clientY;
+            if (parallaxFrame) return;
+            parallaxFrame = requestAnimationFrame(() => {
+                parallaxFrame = 0;
+                const xAxis = (window.innerWidth / 2 - pointerX) / 30;
+                const yAxis = (window.innerHeight / 2 - pointerY) / 30;
+                els.scene.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+            });
+        });
+
+        document.addEventListener('mouseleave', () => {
+            els.scene.style.transform = 'rotateY(0deg) rotateX(0deg)';
+        });
+
+        /* ---------------- 拖入文件夹 ---------------- */
+
+        let dragDepth = 0;
+
+        function showVeil() { els.dropVeil.classList.add('show'); }
+        function hideVeil() {
+            dragDepth = 0;
+            els.dropVeil.classList.remove('show');
+        }
+
+        window.addEventListener('dragenter', (event) => {
+            event.preventDefault();
+            dragDepth += 1;
+            showVeil();
+        });
+
+        window.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+        });
+
+        window.addEventListener('dragleave', (event) => {
+            event.preventDefault();
+            dragDepth = Math.max(0, dragDepth - 1);
+            if (!dragDepth) els.dropVeil.classList.remove('show');
+        });
+
+        window.addEventListener('drop', async (event) => {
+            event.preventDefault();
+            hideVeil();
+
+            const items = Array.from(event.dataTransfer && event.dataTransfer.items ? event.dataTransfer.items : []);
+            const entries = items
+                .map((item) => (item.webkitGetAsEntry ? item.webkitGetAsEntry() : null))
+                .filter(Boolean);
+
+            if (entries.length) {
+                setStatus('— Reading Library —');
+                const files = [];
+                try {
+                    await Promise.all(entries.map((entry) => walkEntry(entry, files)));
+                } catch (err) {
+                    console.warn('读取拖入的文件失败：', err);
+                }
+                if (files.length) {
+                    const name = entries.length === 1 && entries[0].isDirectory
+                        ? entries[0].name
+                        : '拖入的唱片';
+                    loadLibrary(files, name);
+                } else {
+                    setStatus('— No Audio Found —');
+                    toast('拖入的内容里没有音频文件');
+                }
+                return;
+            }
+
+            const files = Array.from(event.dataTransfer ? event.dataTransfer.files : []);
+            if (files.length) loadLibrary(files, '拖入的唱片');
+        });
+
+        function walkEntry(entry, out) {
+            return new Promise((resolve) => {
+                if (!entry) { resolve(); return; }
+                if (entry.isFile) {
+                    entry.file((file) => {
+                        file._relativePath = entry.fullPath;
+                        out.push(file);
+                        resolve();
+                    }, () => resolve());
+                } else if (entry.isDirectory) {
+                    const reader = entry.createReader();
+                    const readBatch = () => {
+                        reader.readEntries(async (batch) => {
+                            if (!batch.length) { resolve(); return; }
+                            await Promise.all(batch.map((child) => walkEntry(child, out)));
+                            readBatch();
+                        }, () => resolve());
+                    };
+                    readBatch();
+                } else {
+                    resolve();
+                }
+            });
+        }
+
+        /* ---------------- 对外接口（方便以后换曲库） ---------------- */
+
+        window.Harmonia = {
+            loadFiles(files, name) {
+                loadLibrary(Array.from(files), name);
+            },
+            next() { step(1); },
+            prev() { step(-1); },
+            toggleShuffle,
+            get library() { return state.tracks.map((track) => track.path); }
+        };
+
+        initOnlineLibrary();
+    })();
+    </script>
+
+</body>
+</html>
